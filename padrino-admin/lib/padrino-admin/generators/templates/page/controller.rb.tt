@@ -1,7 +1,16 @@
 <%= @app_name %>::<%= @admin_name %>.controllers :<%= @orm.name_plural %> do
   get :index do
     @title = "<%= @orm.name_plural.capitalize %>"
-    @<%= @orm.name_plural %> = <%= @orm.all %>
+
+    @page = params[:page] ? params[:page].to_i : 1
+    @previous = true if @page > 1
+
+    end_id = @page * 100
+    start_id = end_id - 100
+    @<%= @orm.name_plural %> = <%= @orm.klass %>.where id: start_id..end_id
+    @<%= @orm.name_plural %>.pop if @<%= @orm.name_plural %>.count > 99
+
+
     render '<%= @orm.name_plural %>/index'
   end
 
