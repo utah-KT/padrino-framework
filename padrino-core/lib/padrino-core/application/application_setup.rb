@@ -23,10 +23,9 @@ module Padrino
         set :default_builder, 'StandardFormBuilder'
 
         # TODO: Remove this hack after getting rid of thread-unsafe http_router:
-        set :init_mutex, Mutex.new
-
-        # TODO: Remove this line after sinatra version up.
-        set :add_charset, %w[javascript xml xhtml+xml].map{ |type| "application/#{type}" }
+        if RUBY_PLATFORM == "java"
+          set :init_mutex, Mutex.new
+        end
 
         default_paths
         default_security
