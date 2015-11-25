@@ -8,7 +8,7 @@
     end_id = @page * 100
     start_id = end_id - 100
     @<%= @orm.name_plural %> = <%= @orm.klass %>.where id: start_id..end_id
-    @<%= @orm.name_plural %>.pop if @<%= @orm.name_plural %>.count > 99
+    @<%= @orm.name_plural %>.pop if @<%= @orm.name_plural %>.count > 100
 
 
     render '<%= @orm.name_plural %>/index'
