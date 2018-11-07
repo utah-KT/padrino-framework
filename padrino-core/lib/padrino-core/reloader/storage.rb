@@ -40,13 +40,22 @@ module Padrino
       end
 
       def rollback(name)
-        ObjectSpace.new_classes(@old_entries[name][:constants]).each do |klass|
+        @rollback_entry = {
+          :constants => ObjectSpace.new_classes(@old_entries[name][:constants])
+        }
+        @rollback_entry[:constants].each do |klass|
           loaded_in_name = files.each do |file, data|
             next if file == name
             break if data[:constants].map(&:to_s).include?(klass.to_s)
           end
-          Reloader.remove_constant(klass) if loaded_in_name
-        end
+          if loaded_in_name
+            logger.devel "kclass #{klass}"
+            logger.devel "rollback_entry #{@rollback_entry}"
+            logger.devel "rollback_entry to_s #{@rollback_entry[:constants].map(&:to_s)}"
+            logger.devel "name #{name} files #{files}"
+            Reloader.remove_constant(klass)
+          end
+        end 
         @old_entries.delete(name)
       end
 
