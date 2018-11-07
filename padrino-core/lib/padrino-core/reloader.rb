@@ -113,6 +113,7 @@ module Padrino
       base, _, object = const.to_s.rpartition('::')
       base = base.empty? ? Object : base.constantize
       base.send :remove_const, object
+      GC.start
       logger.devel "Removed constant #{const} from #{base}"
     rescue NameError
     end
