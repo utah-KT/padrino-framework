@@ -43,7 +43,7 @@ module Padrino
         ObjectSpace.new_classes(@old_entries[name][:constants]).each do |klass|
           loaded_in_name = files.each do |file, data|
             next if file == name
-            break if data[:constants].map(&:to_s).include?(klass.to_s)
+            break if data[:constants].include?(klass)
           end
           Reloader.remove_constant(klass) if loaded_in_name
         end
