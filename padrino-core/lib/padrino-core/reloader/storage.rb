@@ -46,7 +46,7 @@ module Padrino
         @rollback_entry[:constants].each do |klass|
           loaded_in_name = files.each do |file, data|
             next if file == name
-            break if data[:constants].map(&:to_s).include?(klass.to_s)
+            break if data[:constants].include?(klass)
           end
           if loaded_in_name
             logger.devel "kclass #{klass}"
@@ -58,8 +58,6 @@ module Padrino
         end 
         @old_entries.delete(name)
       end
-
-      private
 
       def files
         @files ||= {}
