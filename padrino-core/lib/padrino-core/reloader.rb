@@ -109,6 +109,7 @@ module Padrino
     # Removes the specified class and constant.
     #
     def remove_constant(const)
+      return
       return if constant_excluded?(const)
       base, _, object = const.to_s.rpartition('::')
       base = base.empty? ? Object : base.constantize
