@@ -308,7 +308,7 @@ WARNING
       #
       def require_dependencies(*gem_names)
         options = gem_names.extract_options!
-        gem_names.reverse.each { |lib| insert_into_gemfile(lib, options) }
+        gem_names.reverse_each { |lib| insert_into_gemfile(lib, options) }
       end
 
       ##
@@ -377,9 +377,9 @@ WARNING
       #
       def initializer(name, data=nil)
         @_init_name, @_init_data = name, data
-        register = data.present? ? "    register #{name.to_s.underscore.camelize}Initializer\n" : "    register #{name}\n"
+        register = data ? "    register #{name.to_s.underscore.camelize}Initializer\n" : "    register #{name}\n"
         inject_into_file destination_root("/app/app.rb"), register, :after => "Padrino::Application\n"
-        template "templates/initializer.rb.tt", destination_root("/lib/#{name}_initializer.rb") if data.present?
+        template "templates/initializer.rb.tt", destination_root("/config/initializers/#{name}.rb") if data
       end
 
       ##
@@ -520,10 +520,22 @@ WARNING
       #
       def valid_constant?(name)
         if name =~ /^\d/
-          raise ::NameError, "Project name #{name} cannot start with numbers"
+          fail ::NameError, "Constant name #{name} cannot start with numbers"
         elsif name =~ /^\W/
-          raise ::NameError, "Project name #{name} cannot start with non-word character"
+          fail ::NameError, "Constant name #{name} cannot start with non-word character"
         end
+      end
+
+      ##
+      # Validates namespace name (controller name, etc.) or fails with an error.
+      #
+      # @example
+      #   validate_namespace 'Project_One1' #=> pass
+      #   validate_namespace 'Erroneous/name' #=> fail
+      #
+      def validate_namespace(name)
+        valid_constant? name
+        name.match(/^[[:alnum:]_]+$/) || fail(::NameError, "Namespace '#{name}' must consist only of alphanumeric characters or '_'")
       end
 
       ##

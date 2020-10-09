@@ -57,6 +57,7 @@ module Padrino
         set :uri_root,      '/'
         set :public_folder, proc { Padrino.root('public', uri_root) }
         set :images_path,   proc { File.join(public_folder, 'images') }
+        set :base_url,      'http://localhost'
       end
 
       def default_security
@@ -97,6 +98,7 @@ module Padrino
       # Also initializes the application after setting up the middleware.
       def setup_default_middleware(builder)
         setup_sessions builder
+        builder.use Sinatra::ExtendedRack           if defined?(EventMachine)
         builder.use Padrino::ShowExceptions         if show_exceptions?
         builder.use Padrino::Logger::Rack, uri_root if Padrino.logger && logging?
         builder.use Padrino::Reloader::Rack         if reload?

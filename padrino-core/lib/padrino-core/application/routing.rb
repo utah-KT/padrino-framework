@@ -241,7 +241,8 @@ module Padrino
       #     end
       #   end
       #
-      def parent(name, options={})
+      def parent(name = nil, options={})
+        return super() unless name
         defaults = { :optional => false, :map => name.to_s }
         options = defaults.merge(options)
         @_parent = Array(@_parent) unless @_parent.is_a?(Array)
@@ -339,6 +340,14 @@ module Padrino
       end
       alias :url_for :url
 
+      ##
+      # Returns absolute url. By default adds 'http://localhost' before generated url.
+      # To change that `set :base_url, 'http://example.com'` in your app.
+      #
+      def absolute_url(*args)
+        base_url + url(*args)
+      end
+
       def get(path, *args, &block)
         conditions = @conditions.dup
         route('GET', path, *args, &block)
@@ -394,7 +403,7 @@ module Padrino
         replace_instance_variable(:@_controller, args)
         replace_instance_variable(:@_defaults, options)
         replace_instance_variable(:@filters, :before => @filters[:before].dup, :after => @filters[:after].dup)
-        replace_instance_variable(:@layout, nil)
+        replace_instance_variable(:@layout, @layout)
 
         yield
 
@@ -561,6 +570,7 @@ module Padrino
       # controllers, parents, 'with' parameters, and other options.
       #
       def parse_route(path, options, verb)
+        path = path.dup if path.kind_of?(String)
         route_options = {}
 
         if options[:params] == true
@@ -713,10 +723,9 @@ module Padrino
 
           accept_format = CONTENT_TYPE_ALIASES[type] || type
           if types.include?(accept_format)
-            content_type(accept_format || :html, :charset => 'utf-8')
+            content_type(accept_format || :html)
           else
-            halt 406 unless catch_all
-            false
+            catch_all ? true : halt(406)
           end
         end
       end
@@ -734,7 +743,7 @@ module Padrino
         mime_types = types.map{ |type| mime_type(CONTENT_TYPE_ALIASES[type] || type) }
         condition do
           halt 406 unless mime_types.include?(request.media_type)
-          content_type(mime_symbol(request.media_type), :charset => 'utf-8')
+          content_type(mime_symbol(request.media_type))
         end
       end
 
@@ -877,7 +886,6 @@ module Padrino
       #
       def content_type(type=nil, params={})
         return @_content_type unless type
-        params.delete(:charset) if type == :json
         super(type, params)
         @_content_type = type
       end
@@ -887,7 +895,7 @@ module Padrino
       def provides_any?(formats)
         accepted_format = formats.first
         type = accepted_format ? mime_symbol(accepted_format) : :html
-        content_type(CONTENT_TYPE_ALIASES[type] || type, :charset => 'utf-8')
+        content_type(CONTENT_TYPE_ALIASES[type] || type)
       end
 
       def provides_format?(types, format)
@@ -897,7 +905,7 @@ module Padrino
           halt 406 if settings.respond_to?(:treat_format_as_accept) && settings.treat_format_as_accept
           false
         else
-          content_type(format || :html, :charset => 'utf-8')
+          content_type(format || :html)
         end
       end
 
@@ -910,6 +918,8 @@ module Padrino
       end
 
       def dispatch!
+        @params = defined?(Sinatra::IndifferentHash) ? Sinatra::IndifferentHash[@request.params] : indifferent_params(@request.params)
+        force_encoding(@params)
         invoke do
           static! if settings.static? && (request.get? || request.head?)
           route!

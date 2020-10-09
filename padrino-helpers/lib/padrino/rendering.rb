@@ -35,6 +35,11 @@ module Padrino
     ] unless defined?(IGNORE_FILE_PATTERN)
 
     ##
+    # Defines common content-type alias mappings.
+    #
+    CONTENT_TYPE_ALIASES = { :htm => :html }
+
+    ##
     # Default options used in the resolve_template-method.
     #
     DEFAULT_RENDERING_OPTIONS = { :strict_format => false, :raise_exceptions => true } unless defined?(DEFAULT_RENDERING_OPTIONS)
@@ -221,7 +226,7 @@ module Padrino
         # This means that no engine was explicitly defined
         data, engine = resolve_template(engine, options) if data.nil?
 
-        options[:layout] ||= false unless Rendering.engine_configurations.has_key?(engine)
+        ensure_rendering_engine(engine) || (options[:layout] ||= @layout || false)
 
         # Cleanup the template.
         @current_engine, engine_was = engine, @current_engine
@@ -345,13 +350,14 @@ module Padrino
       end
 
       def select_template(templates, template_path, content_type, _locale)
-        simple_content_type = [:html, :plain].include?(content_type)
+        symbol = content_type_symbol(content_type)
+        simple_content_type = [:html, :plain].include?(symbol)
         target_path, target_engine = path_and_engine(template_path)
 
-        templates.find{ |file,_| file.to_s == "#{target_path}.#{locale}.#{content_type}" } ||
+        templates.find{ |file,_| file.to_s == "#{target_path}.#{locale}.#{symbol}" } ||
         templates.find{ |file,_| file.to_s == "#{target_path}.#{locale}" && simple_content_type } ||
         templates.find{ |file,engine| engine == target_engine || File.extname(file.to_s) == ".#{target_engine}" } ||
-        templates.find{ |file,_| file.to_s == "#{target_path}.#{content_type}" } ||
+        templates.find{ |file,_| file.to_s == "#{target_path}.#{symbol}" } ||
         templates.find{ |file,_| file.to_s == "#{target_path}" && simple_content_type }
       end
 
@@ -361,7 +367,25 @@ module Padrino
         path = path.chomp(extname)
         path.insert(0, '/') unless Pathname.new(path).absolute?
         path = path.squeeze('/').sub(relative, '') if relative
-        [path.to_sym, engine]
+        [path.to_sym, engine.to_sym]
+      end
+
+      def ensure_rendering_engine(engine)
+        return true if settings.respond_to?(engine)
+        return nil unless engine == :erb
+        require 'erb'
+      rescue LoadError
+      else
+        require 'padrino/rendering/erb_template'
+        settings.set :erb, Padrino::Rendering.engine_configurations[:erb]
+      end
+
+      def content_type_symbol(type)
+        if defined?(::Rack::Mime::MIME_TYPES) && type.kind_of?(String) &&
+           ::Rack::Mime::MIME_TYPES.key(type)
+          type = ::Rack::Mime::MIME_TYPES.key(type).sub(/\./,'').to_sym
+        end
+        CONTENT_TYPE_ALIASES[type] || type
       end
     end
   end
@@ -394,14 +418,4 @@ unless defined? Padrino::Rendering::SlimTemplate
   else
     require 'padrino/rendering/slim_template'
   end
-end
-
-if Padrino::Rendering.engine_configurations.empty? && !defined?(Padrino::IGNORE_NO_RENDERING_ENGINE)
-  warn <<-EOT
-WARNING: no supported rendering engine found. To use Padrino::Helpers and 
-Padrino::Rendering properly you should include `gem 'erubis'`, `gem 'haml'` 
-or `gem 'slim'` in your Gemfile. If you are confident about using 
-Padrino::Helpers without Padrino::Rendering, please define constant 
-`Padrino::IGNORE_NO_RENDERING_ENGINE = true` before `require 'padrino-helpers'`.
-  EOT
 end

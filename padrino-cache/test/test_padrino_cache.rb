@@ -473,6 +473,52 @@ describe "PadrinoCache" do
       register Padrino::Cache
     end
 
-    assert @app.cache.adapter.adapter.is_a?(Moneta::Adapters::Memory)
+    adapter = @app.cache.adapter
+    while adapter.respond_to? :adapter
+      adapter = adapter.adapter
+    end
+    assert_kind_of Moneta::Adapters::Memory, adapter
+  end
+
+  it "should check key existence" do
+    count1, count2 = 0, 0
+    mock_app do
+      register Padrino::Cache
+      enable :caching
+      get "/" do
+        cache(:foo) do
+          count1 += 1
+          nil
+        end
+        count1.inspect
+      end
+
+      get "/object" do
+        cache_object(:bar) do
+          count2 += 1
+          nil
+        end
+        count2.inspect
+      end
+    end
+    2.times { get "/" }
+    assert_equal "1", body
+    2.times { get "/object" }
+    assert_equal "1", body
+  end
+
+  it 'should cache full mime type of content_type' do
+    mock_app do
+      register Padrino::Cache
+      enable :caching
+      get '/foo', :cache => true do
+        content_type :json, :charset => 'utf-8'
+        '{}'
+      end
+    end
+    get "/foo"
+    assert_equal 'application/json;charset=utf-8', last_response.content_type
+    get "/foo"
+    assert_equal 'application/json;charset=utf-8', last_response.content_type
   end
 end

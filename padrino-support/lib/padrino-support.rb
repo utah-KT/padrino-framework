@@ -1,7 +1,6 @@
 ##
 # This file loads certain extensions required by Padrino from ActiveSupport.
 #
-require 'active_support/core_ext/module/aliasing'           # alias_method_chain
 require 'active_support/core_ext/hash/reverse_merge'        # reverse_merge
 require 'active_support/core_ext/hash/keys'                 # symbolize_keys
 require 'active_support/core_ext/hash/indifferent_access'   # params[:foo]
@@ -12,9 +11,9 @@ require 'active_support/core_ext/string/output_safety'      # SafeBuffer and htm
 
 require 'padrino-support/core_ext/string/inflections'
 require 'padrino-support/core_ext/string/colorize'
-require 'padrino-support/core_ext/string/undent' # deprecated
 require 'padrino-support/core_ext/object_space'
 require 'padrino-support/file_set'
+require 'padrino-support/utils'
 
 
 ##
@@ -30,5 +29,5 @@ end
 # In reloader for accessing class_name Foo._orig_klass_name
 #
 class Module
-  alias :_orig_klass_name :to_s
+  alias :_orig_klass_name :name
 end

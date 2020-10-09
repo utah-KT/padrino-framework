@@ -406,6 +406,16 @@ describe "Routing" do
     assert_equal 406, status
   end
 
+  it 'should provide proper content when :provides is specified and Accept: `*/*` requested' do
+    mock_app do
+      get(:text, :provides => :text) { "text" }
+    end
+    header 'Accept', '*/*'
+    get "/text"
+    assert_equal 200, status
+    assert_equal "text", body
+  end
+
   it 'should return 404 on file extensions it does not provide and flag is not set' do
     mock_app do
       get(:a, :provides => [:html, :js]){ content_type }
@@ -727,10 +737,25 @@ describe "Routing" do
     assert_equal 'application/json', response["Content-Type"]
     get "/a.foo"
     assert_equal "foo", body
-    assert_equal 'application/foo;charset=utf-8', response["Content-Type"]
+    assert_equal 'application/foo', response["Content-Type"]
     get "/a"
     assert_equal "html", body
     assert_equal 'text/html;charset=utf-8', response["Content-Type"]
+  end
+
+  it 'should not drop json charset' do
+    mock_app do
+      get '/' do
+        content_type :json, :charset => 'utf-16'
+      end
+      get '/a' do
+        content_type :json, 'charset' => 'utf-16'
+      end
+    end
+    get '/'
+    assert_equal 'application/json;charset=utf-16', response["Content-Type"]
+    get '/a'
+    assert_equal 'application/json;charset=utf-16', response["Content-Type"]
   end
 
   it 'should use controllers' do
@@ -2023,7 +2048,7 @@ describe "Routing" do
     mock_app do
       get(:index) { "%s %s" % [params[:account][:name], params[:account][:surname]] }
     end
-    get "/?account[name]=foo&account[surname]=bar"
+    get "/?" + Padrino::Utils.build_uri_query(:account => { :name => 'foo', :surname => 'bar' })
     assert_equal 'foo bar', body
     get @app.url(:index, "account[name]" => "foo", "account[surname]" => "bar")
     assert_equal 'foo bar', body
@@ -2163,5 +2188,19 @@ describe "Routing" do
     end
     put "/b/x/y"
     assert_equal '{"b"=>"x", "c"=>"y"}', body
+  end
+
+  it 'should generate urls and absolute urls' do
+    mock_app do
+      get(:index) { settings.url(:index) }
+      get(:absolute) { settings.absolute_url(:absolute) }
+    end
+    get '/'
+    assert_equal '/', body
+    get '/absolute'
+    assert_equal 'http://localhost/absolute', body
+    @app.set :base_url, 'http://example.com'
+    get '/absolute'
+    assert_equal 'http://example.com/absolute', body
   end
 end

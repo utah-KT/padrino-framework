@@ -24,14 +24,14 @@ if PadrinoTasks.load?(:datamapper, defined?(DataMapper))
 
       desc "Migrate up using migrations"
       task :up, [:version] => :load do |t, args|
-        version = args[:version] || ENV['VERSION']
+        version = args[:version] || env_migration_version
         migrate_up!(version)
         puts "<= dm:migrate:up #{version} executed"
       end
 
       desc "Migrate down using migrations"
       task :down, [:version] => :load do |t, args|
-        version = args[:version] || ENV['VERSION']
+        version = args[:version] || env_migration_version
         migrate_down!(version)
         puts "<= dm:migrate:down #{version} executed"
       end
@@ -86,6 +86,8 @@ if PadrinoTasks.load?(:datamapper, defined?(DataMapper))
     task :setup => [:create, :migrate, :seed]
   end
 
+  task 'db:migrate:down' => 'dm:migrate:down'
+  task 'db:migrate:up' => 'dm:migrate:up'
   task 'db:migrate' => 'dm:migrate'
   task 'db:create'  => 'dm:create'
   task 'db:drop'    => 'dm:drop'

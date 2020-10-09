@@ -24,13 +24,7 @@ Gem::Specification.new do |s|
   s.rdoc_options  = ["--charset=UTF-8"]
 
   s.add_dependency("padrino-support", Padrino.version)
-  if ENV["SINATRA_EDGE"]
-    s.add_dependency("sinatra")
-  else
-    # remove this rack dependency after Sinatra > 1.4.5
-    s.add_dependency("rack", "< 1.6.0")
-    s.add_dependency("sinatra", "~> 1.4.2")
-  end
+  s.add_dependency("sinatra", ">= 1.4.6")
   s.add_dependency("http_router", "~> 0.11.0")
   s.add_dependency("thor", "~> 0.18")
   s.add_dependency("activesupport", ">= 3.1")

@@ -75,14 +75,14 @@ module Padrino
       # condition padrino return true/false if the request.path_info match the given url.
       #
       def link_to(*args, &block)
-        options  = args.extract_options!
+        options = args.extract_options!
         name = block_given? ? '' : args.shift
         href = args.first
         if fragment = options[:fragment] || options[:anchor]
           warn 'Options :anchor and :fragment are deprecated for #link_to. Please use :fragment for #url'
           href << '#' << fragment.to_s
         end
-        options.reverse_merge!(:href => href || '#')
+        options = { :href => href ? escape_link(href) : '#' }.update(options)
         return name unless parse_conditions(href, options)
         block_given? ? content_tag(:a, options, &block) : content_tag(:a, name, options)
       end
@@ -204,11 +204,23 @@ module Padrino
       #
       def image_tag(url, options={})
         options.reverse_merge!(:src => image_path(url))
+        options[:alt] ||= image_alt(url) unless url =~ /\A(?:cid|data):/ || url.blank?
         tag(:img, options)
       end
 
       ##
-      # Returns an html script tag for each of the sources provided.
+      # Returns a string suitable for an alt attribute of img element.
+      #
+      # @param [String] src
+      #   The source path for the image tag.
+      # @return [String] The alt attribute value.
+      #
+      def image_alt(src)
+        File.basename(src, '.*').sub(/-[[:xdigit:]]{32,64}\z/, '').tr('-_', ' ').capitalize
+      end
+
+      ##
+      # Returns a html link tag for each of the sources provided.
       # You can pass in the filename without extension or a symbol and we search it in your +appname.public_folder+
       # like app/public/stylesheets for inclusion. You can provide also a full path.
       #
@@ -298,7 +310,7 @@ module Padrino
       #
       def asset_path(kind, source = nil)
         kind, source = source, kind if source.nil?
-        source = asset_normalize_extension(kind, URI.escape(source.to_s))
+        source = asset_normalize_extension(kind, escape_link(source.to_s))
         return source if source =~ ABSOLUTE_URL_PATTERN || source =~ /^\//
         source = File.join(asset_folder_name(kind), source)
         timestamp = asset_timestamp(source)

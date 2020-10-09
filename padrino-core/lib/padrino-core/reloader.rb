@@ -73,8 +73,9 @@ module Padrino
     # We lock dependencies sets to prevent reloading of protected constants
     #
     def lock!
-      klasses = ObjectSpace.classes do |klass|
-        klass._orig_klass_name.split('::').first
+      klasses = Storage.send(:object_classes) do |klass|
+        original_klass_name = klass._orig_klass_name
+        original_klass_name.split('::').first if original_klass_name
       end
       klasses |= Padrino.mounted_apps.map(&:app_class)
       exclude_constants.merge(klasses)
@@ -221,7 +222,9 @@ module Padrino
     #
     def files_for_rotation
       files = Set.new
-      files += Dir.glob("#{Padrino.root}/{lib,models,shared}/**/*.rb")
+      Padrino.dependency_paths.each do |path|
+        files += Dir.glob(path)
+      end
       reloadable_apps.each do |app|
         files << app.app_file
         files += Dir.glob(app.app_obj.prerequisites)
@@ -251,18 +254,13 @@ module Padrino
     #
     def external_constant?(const)
       sources = object_sources(const)
-      begin
-        if sample = ObjectSpace.each_object(const).first
-          sources += object_sources(sample)
-        end
-      rescue RuntimeError => error # JRuby 1.7.12 fails to ObjectSpace.each_object
-        raise unless RUBY_PLATFORM =='java' && error.message.start_with?("ObjectSpace is disabled")
-      end
+      # consider methodless constants not external
+      return false if sources.empty?
       !sources.any?{ |source| source.start_with?(Padrino.root) }
     end
 
     ##
-    # Gets all the sources in which target's class or instance methods are defined.
+    # Gets all the sources in which target class is defined.
     #
     # Note: Method#source_location is for Ruby 1.9.3+ only.
     #
@@ -271,7 +269,14 @@ module Padrino
       target.methods.each do |method_name|
         next unless method_name.kind_of?(Symbol)
         method_object = target.method(method_name)
-        if method_object.owner == (target.class == Class ? target.singleton_class : target.class)
+        if method_object.owner == target.singleton_class
+          sources << method_object.source_location.first
+        end
+      end
+      target.instance_methods.each do |method_name|
+        next unless method_name.kind_of?(Symbol)
+        method_object = target.instance_method(method_name)
+        if method_object.owner == target
           sources << method_object.source_location.first
         end
       end

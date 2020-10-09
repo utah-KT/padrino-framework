@@ -37,7 +37,9 @@ module Padrino
         def label(field, options={}, &block)
           options[:id] ||= nil
           options[:caption] ||= I18n.t("#{model_name}.attributes.#{field}", :count => 1, :default => field.to_s.humanize, :scope => :models) + ': '
-          @template.label_tag(field_id(field), default_options(field, options), &block)
+          defaults = default_options(field, options)
+          defaults.delete(:value)
+          @template.label_tag(field_id(field), defaults, &block)
         end
 
         def hidden_field(field, options={})
@@ -110,7 +112,9 @@ module Padrino
 
         def file_field(field, options={})
           self.multipart = true
-          @template.file_field_tag field_name(field), default_options(field, options).except(:value)
+          defaults = default_options(field, options)
+          defaults.delete(:value)
+          @template.file_field_tag field_name(field), defaults
         end
 
         def submit(*args)
@@ -119,6 +123,34 @@ module Padrino
 
         def image_submit(source, options={})
           @template.image_submit_tag source, options
+        end
+
+        def datetime_field(field, options={})
+          @template.datetime_field_tag field_name(field), default_options(field, options)
+        end
+
+        def datetime_local_field(field, options={})
+          @template.datetime_local_field_tag field_name(field), default_options(field, options)
+        end
+
+        def date_field(field, options={})
+          @template.date_field_tag field_name(field), default_options(field, options)
+        end
+
+        def month_field(field, options={})
+          @template.month_field_tag field_name(field), default_options(field, options)
+        end
+
+        def week_field(field, options={})
+          @template.week_field_tag field_name(field), default_options(field, options)
+        end
+
+        def time_field(field, options={})
+          @template.time_field_tag field_name(field), default_options(field, options)
+        end
+
+        def color_field(field, options={})
+          @template.color_field_tag field_name(field), default_options(field, options)
         end
 
         ##
@@ -147,7 +179,24 @@ module Padrino
 
         # Returns the known field types for a Formbuilder.
         def self.field_types
-          [:hidden_field, :text_field, :text_area, :password_field, :file_field, :radio_button, :check_box, :select]
+          [:hidden_field, :text_field, :text_area, :password_field, :file_field, :radio_button, :check_box, :select,
+            :number_field, :telephone_field, :email_field, :search_field, :url_field,
+            :datetime_field, :datetime_local_field, :date_field, :month_field, :week_field, :time_field, :color_field,
+          ]
+        end
+
+        ##
+        # Returns the human name of the field. Look that use builtin I18n.
+        #
+        def field_human_name(field)
+          I18n.translate("#{object_model_name}.attributes.#{field}", :count => 1, :default => field.to_s.humanize, :scope => :models)
+        end
+
+        ##
+        # Returns the object's models name.
+        #
+        def object_model_name(explicit_object=object)
+          explicit_object.is_a?(Symbol) ? explicit_object : explicit_object.class.to_s.underscore.gsub(/\//, '_')
         end
 
         ##

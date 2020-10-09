@@ -269,6 +269,7 @@ describe "Mounter" do
       assert_equal "hello sinatra app", res.body
       res = Rack::MockRequest.new(app).get("/sinatra_app/static.html")
       assert_equal "hello static file\n", res.body
+      assert_equal [], RackApp.prerequisites
     end
 
     it 'should support the Rack Application inside padrino project' do
@@ -284,6 +285,20 @@ describe "Mounter" do
       res = Rack::MockRequest.new(app).get("/api/hey")
       assert_equal "api app", res.body
       assert defined?(DemoProject::APILib)
+    end
+
+    it "should not load dependency files if app's root isn't started with Padrino.root" do
+      Object.send(:remove_const, :FakeLib) if defined?(FakeLib)
+      path = File.expand_path(File.dirname(__FILE__) + '/fixtures/apps/demo_project/app')
+      fake_path = File.expand_path(File.dirname(__FILE__) + "/fixtures/apps/external_apps/fake_root")
+      require path
+      require fake_path
+      Padrino.mount("fake_root", :app_class => "FakeRoot").to('/fake_root')
+      Padrino.mount('main_app', :app_class => 'DemoProject::App').to('/')
+      Padrino.stub(:root, File.expand_path(File.dirname(__FILE__) + "/fixtures/apps/demo_project")) do
+        Padrino.application
+      end
+      assert !defined?(FakeLib)
     end
   end
 end

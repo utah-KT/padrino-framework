@@ -22,12 +22,17 @@ describe "ControllerGenerator" do
       assert_no_file_exists("#{@apptmp}/app/controllers/demo.rb")
     end
 
+    it 'should fail with NameError if given invalid namespace names' do
+      capture_io { generate(:project, "sample", "--root=#{@apptmp}") }
+      assert_raises(::NameError) { capture_io { generate(:controller, "wrong/name", "--root=#{@apptmp}/sample") } }
+    end
+
     it 'should generate controller within existing project' do
       capture_io { generate(:project, 'sample_project', "--root=#{@apptmp}", '--script=none', '-t=bacon') }
       capture_io { generate(:controller, 'DemoItems', "-r=#{@apptmp}/sample_project") }
       assert_match_in_file(/SampleProject::App.controllers :demo_items do/m, @controller_path)
       assert_match_in_file(/helpers DemoItemsHelper/, @helper_path)
-      assert_file_exists("#{@apptmp}/sample_project/app/views/demo_items")
+      assert_dir_exists("#{@apptmp}/sample_project/app/views/demo_items")
       assert_file_exists(@controller_test_path)
     end
 
@@ -47,7 +52,7 @@ describe "ControllerGenerator" do
       capture_io { generate(:controller, 'DemoItems', "-r=#{@apptmp}/warepedia") }
       assert_match_in_file(/Warepedia::App.controllers :demo_items do/m, "#{@apptmp}/warepedia/app/controllers/demo_items.rb")
       assert_match_in_file(/helpers DemoItemsHelper/, "#{@apptmp}/warepedia/app/helpers/demo_items_helper.rb")
-      assert_file_exists("#{@apptmp}/warepedia/app/views/demo_items")
+      assert_dir_exists("#{@apptmp}/warepedia/app/views/demo_items")
     end
 
     it 'should generate controller in specified app' do
@@ -56,7 +61,7 @@ describe "ControllerGenerator" do
       capture_io { generate(:controller, 'DemoItems','-a=/subby', "-r=#{@apptmp}/sample_project") }
       assert_match_in_file(/SampleProject::Subby.controllers :demo_items do/m, @controller_path.gsub('app','subby'))
       assert_match_in_file(/helpers DemoItemsHelper/m, "#{@apptmp}/sample_project/subby/helpers/demo_items_helper.rb")
-      assert_file_exists("#{@apptmp}/sample_project/subby/views/demo_items")
+      assert_dir_exists("#{@apptmp}/sample_project/subby/views/demo_items")
       assert_match_in_file(/describe "\/demo_items" do/m, @controller_test_path.gsub('app','subby'))
       assert_match_in_file(/get "\/demo_items"/m, @controller_test_path.gsub('app','subby'))
     end
@@ -104,7 +109,7 @@ describe "ControllerGenerator" do
       capture_io { generate(:controller, 'DemoItems', "-r=#{@apptmp}/sample_project") }
       assert_match_in_file(/SampleProject::App.controllers :demo_items do/m, @controller_path)
       assert_match_in_file(/helpers DemoItemsHelper/m, "#{@apptmp}/sample_project/app/helpers/demo_items_helper.rb")
-      assert_file_exists("#{@apptmp}/sample_project/app/views/demo_items")
+      assert_dir_exists("#{@apptmp}/sample_project/app/views/demo_items")
       assert_no_file_exists("#{@apptmp}/sample_project/test")
     end
 
@@ -200,10 +205,18 @@ describe "ControllerGenerator" do
       assert_match_in_file(/Capybara.app = /, "#{@apptmp}/sample_project/features/support/env.rb")
     end
 
+    it "should generate controller test for testunit" do
+      capture_io { generate(:project, 'sample_project', "--root=#{@apptmp}", '--script=none', '-t=testunit') }
+      capture_io { generate(:app, 'subby', "-r=#{@apptmp}/sample_project") }
+      capture_io { generate(:controller, 'DemoItems','-a=/subby', "-r=#{@apptmp}/sample_project") }
+      assert_match_in_file(/class DemoItemsControllerTest < Test::Unit::TestCase/m, "#{@apptmp}/sample_project/test/subby/controllers/demo_items_controller_test.rb")
+    end
+
+
     it 'should correctly generate file names' do
       capture_io { generate(:project, 'sample_project', "--root=#{@apptmp}", '--script=none', '-t=rspec') }
       capture_io { generate(:controller, 'DemoItems', "-r=#{@apptmp}/sample_project") }
-      assert_file_exists("#{@apptmp}/sample_project/app/views/demo_items")
+      assert_dir_exists("#{@apptmp}/sample_project/app/views/demo_items")
       assert_file_exists("#{@apptmp}/sample_project/app/controllers/demo_items.rb")
       assert_file_exists("#{@apptmp}/sample_project/app/helpers/demo_items_helper.rb")
       assert_file_exists("#{@apptmp}/sample_project/spec/app/controllers/demo_items_controller_spec.rb")
@@ -222,7 +235,7 @@ describe "ControllerGenerator" do
       it 'should not generate helper within existing project' do
         capture_io { generate(:project, 'sample_project', "--root=#{@apptmp}", '--script=none', '-t=rspec') }
         capture_io { generate(:controller, 'DemoItems', "-r=#{@apptmp}/sample_project", '--no-helper') }
-        assert_file_exists("#{@apptmp}/sample_project/app/views/demo_items")
+        assert_dir_exists("#{@apptmp}/sample_project/app/views/demo_items")
         assert_file_exists("#{@apptmp}/sample_project/app/controllers/demo_items.rb")
         assert_file_exists("#{@apptmp}/sample_project/spec/app/controllers/demo_items_controller_spec.rb")
         assert_no_file_exists("#{@apptmp}/sample_project/app/helpers/demo_items_helper.rb")
