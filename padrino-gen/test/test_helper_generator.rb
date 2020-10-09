@@ -62,13 +62,6 @@ describe "HelperGenerator" do
       assert_match_in_file(/describe "SampleProject::Subby::DemoItemsHelper" do/m, @helper_test_path.gsub('app','subby'))
     end
 
-    it 'should generate helper test for riot' do
-      capture_io { generate(:project, 'sample_project', "--root=#{@apptmp}", '--script=none', '-t=riot') }
-      capture_io { generate(:app, 'subby', "-r=#{@apptmp}/sample_project") }
-      capture_io { generate(:helper, 'DemoItems','-a=/subby', "-r=#{@apptmp}/sample_project") }
-      assert_match_in_file(/describe "SampleProject::Subby::DemoItemsHelper" do/m, @helper_test_path.gsub('app','subby'))
-    end
-
     it 'should generate helper test for minitest' do
       capture_io { generate(:project, 'sample_project', "--root=#{@apptmp}", '--script=none', '-t=minitest') }
       capture_io { generate(:app, 'subby', "-r=#{@apptmp}/sample_project") }
@@ -93,11 +86,12 @@ describe "HelperGenerator" do
       assert_file_exists("#{@apptmp}/sample_project/test/subby/helpers/demo_items_helper_test.rb")
     end
 
-    it 'should generate helper test for steak' do
-      capture_io { generate(:project, 'sample_project', "--root=#{@apptmp}", '--script=none', '-t=steak') }
+    it "should generate helper test for testunit" do
+      capture_io { generate(:project, 'sample_project', "--root=#{@apptmp}", '--test=testunit', '--script=none') }
       capture_io { generate(:app, 'subby', "-r=#{@apptmp}/sample_project") }
       capture_io { generate(:helper, 'DemoItems','-a=/subby', "-r=#{@apptmp}/sample_project") }
-      assert_match_in_file(/describe "SampleProject::Subby::DemoItemsHelper" do/m, "#{@apptmp}/sample_project/spec/subby/helpers/demo_items_helper_spec.rb")
+      assert_match_in_file(/class DemoItemsHelperTest < Test::Unit::TestCase/m, "#{@apptmp}/sample_project/test/subby/helpers/demo_items_helper_test.rb")
+      assert_match_in_file(/@helpers\.extend SampleProject::Subby::DemoItemsHelper/m, "#{@apptmp}/sample_project/test/subby/helpers/demo_items_helper_test.rb")
     end
 
     it "should generate helper test for testunit" do

@@ -13,7 +13,7 @@ module Padrino
       #
       def default_configuration!
         set :app_file, File.expand_path(caller_files.first || $0)
-        set :app_name, settings.to_s.underscore.to_sym
+        set :app_name, Inflections.underscore(settings).to_sym
 
         set :environment, Padrino.env
         set :reload, proc { development? }
@@ -21,11 +21,6 @@ module Padrino
 
         set :method_override, true
         set :default_builder, 'StandardFormBuilder'
-
-        # TODO: Remove this hack after getting rid of thread-unsafe http_router:
-        if RUBY_PLATFORM == "java"
-          set :init_mutex, Mutex.new
-        end
 
         default_paths
         default_security
@@ -45,7 +40,17 @@ module Padrino
         default_routes
         default_errors
         setup_locale
+        precompile_routes!
         @_configured = true
+      end
+
+      def precompile_routes?
+        settings.respond_to?(:precompile_routes) && settings.precompile_routes?
+      end
+
+      def precompile_routes!
+        compiled_router.prepare!
+        compiled_router.engine.compile!
       end
 
       private

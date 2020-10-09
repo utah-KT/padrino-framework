@@ -40,11 +40,6 @@ describe "AssetTagHelpers" do
       assert_html_has_tag(actual_html, 'a#linky.first', :content => "Sign up", :href => '/register')
     end
 
-    it 'should display link element with anchor attribute' do
-      actual_html = link_to("Anchor", "/anchor", :anchor => :foo)
-      assert_html_has_tag(actual_html, 'a', :content => "Anchor", :href => '/anchor#foo')
-    end
-
     it 'should display link element with void url and options' do
       actual_link = link_to('Sign up', :class => "test")
       assert_html_has_tag(actual_link, 'a', :content => "Sign up", :href => '#', :class => 'test')

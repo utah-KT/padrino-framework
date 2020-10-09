@@ -24,17 +24,17 @@ module Padrino
       #
       # @example
       #   flash_tag(:notice, :id => 'flash-notice')
-      #   # Generates: <div class="notice">flash-notice</div>
+      #   # Generates: <div class="notice" id="flash-notice">flash-notice</div>
       #   flash_tag(:error, :success)
       #   # Generates: <div class="error">flash-error</div>
       #   # <div class="success">flash-success</div>
       #
       def flash_tag(*args)
-        options = args.extract_options!
+        options = args.last.is_a?(Hash) ? args.pop : {}
         bootstrap = options.delete(:bootstrap) if options[:bootstrap]
-        args.inject(ActiveSupport::SafeBuffer.new) do |html,kind|
-          flash_text = ActiveSupport::SafeBuffer.new << flash[kind]
-          next html if flash_text.blank?
+        args.inject(SafeBuffer.new) do |html,kind|
+          next html unless flash[kind]
+          flash_text = SafeBuffer.new << flash[kind]
           flash_text << content_tag(:button, '&times;'.html_safe, {:type => :button, :class => :close, :'data-dismiss' => :alert}) if bootstrap
           html << content_tag(:div, flash_text, { :class => kind }.update(options))
         end
@@ -67,21 +67,24 @@ module Padrino
       #
       # @example
       #   link_to('click me', '/dashboard', :class => 'linky')
+      #   # Generates <a class="linky" href="/dashboard">click me</a>
+      #
       #   link_to('click me', '/dashboard', :remote => true)
+      #   # Generates <a href="/dashboard" data-remote="true">click me</a>
+      #
       #   link_to('click me', '/dashboard', :method => :delete)
-      #   link_to('/dashboard', :class => 'blocky') do; end
+      #   # Generates <a href="/dashboard" data-method="delete" rel="nofollow">click me</a>
+      #
+      #   link_to('/dashboard', :class => 'blocky') { 'click me' }
+      #   # Generates <a class="blocky" href="/dashboard">click me</a>
       #
       # Note that you can pass :+if+ or :+unless+ conditions, but if you provide :current as
       # condition padrino return true/false if the request.path_info match the given url.
       #
       def link_to(*args, &block)
-        options = args.extract_options!
+        options = args.last.is_a?(Hash) ? args.pop : {}
         name = block_given? ? '' : args.shift
         href = args.first
-        if fragment = options[:fragment] || options[:anchor]
-          warn 'Options :anchor and :fragment are deprecated for #link_to. Please use :fragment for #url'
-          href << '#' << fragment.to_s
-        end
         options = { :href => href ? escape_link(href) : '#' }.update(options)
         return name unless parse_conditions(href, options)
         block_given? ? content_tag(:a, options, &block) : content_tag(:a, name, options)
@@ -113,7 +116,7 @@ module Padrino
       #
       def feed_tag(mime, url, options={})
         full_mime = (mime == :atom) ? 'application/atom+xml' : 'application/rss+xml'
-        tag(:link, options.reverse_merge(:rel => 'alternate', :type => full_mime, :title => mime, :href => url))
+        tag(:link, { :rel => 'alternate', :type => full_mime, :title => mime, :href => url }.update(options))
       end
 
       ##
@@ -133,16 +136,18 @@ module Padrino
       # @return [String] Mail link html tag with specified +options+.
       #
       # @example
-      #   # Generates: <a href="mailto:me@demo.com">me@demo.com</a>
       #   mail_to "me@demo.com"
-      #   # Generates: <a href="mailto:me@demo.com">My Email</a>
+      #   # Generates: <a href="mailto:me@demo.com">me@demo.com</a>
+      #
       #   mail_to "me@demo.com", "My Email"
+      #   # Generates: <a href="mailto:me@demo.com">My Email</a>
       #
       def mail_to(email, caption=nil, mail_options={})
-        html_options = mail_options.slice!(:cc, :bcc, :subject, :body)
-        mail_query = Rack::Utils.build_query(mail_options).gsub(/\+/, '%20').gsub('%40', '@')
-        mail_href = "mailto:#{email}"; mail_href << "?#{mail_query}" if mail_query.present?
-        link_to((caption || email), mail_href, html_options)
+        mail_options, html_options = mail_options.partition{ |key,_| [:cc, :bcc, :subject, :body].include?(key) }
+        mail_query = Rack::Utils.build_query(Hash[mail_options]).gsub(/\+/, '%20').gsub('%40', '@')
+        mail_href = "mailto:#{email}"
+        mail_href << "?#{mail_query}" unless mail_query.empty?
+        link_to((caption || email), mail_href, Hash[html_options])
       end
 
       ##
@@ -156,14 +161,14 @@ module Padrino
       # @return [String] Meta html tag with specified +options+.
       #
       # @example
-      #   # Generates: <meta name="keywords" content="weblog,news" />
       #   meta_tag "weblog,news", :name => "keywords"
+      #   # Generates: <meta name="keywords" content="weblog,news" />
       #
-      #   # Generates: <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
       #   meta_tag "text/html; charset=UTF-8", 'http-equiv' => "Content-Type"
+      #   # Generates: <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
       #
       def meta_tag(content, options={})
-        options.reverse_merge!("content" => content)
+        options = { "content" => content }.update(options)
         tag(:meta, options)
       end
 
@@ -185,7 +190,7 @@ module Padrino
       #
       def favicon_tag(source, options={})
         type = File.extname(source).sub('.','')
-        options = options.dup.reverse_merge!(:href => image_path(source), :rel => 'icon', :type => "image/#{type}")
+        options = { :href => image_path(source), :rel => 'icon', :type => "image/#{type}" }.update(options)
         tag(:link, options)
       end
 
@@ -203,8 +208,8 @@ module Padrino
       #   image_tag('icons/avatar.png')
       #
       def image_tag(url, options={})
-        options.reverse_merge!(:src => image_path(url))
-        options[:alt] ||= image_alt(url) unless url =~ /\A(?:cid|data):/ || url.blank?
+        options = { :src => image_path(url) }.update(options)
+        options[:alt] ||= image_alt(url) unless url.to_s =~ /\A(?:cid|data):|\A\Z/
         tag(:img, options)
       end
 
@@ -238,14 +243,14 @@ module Padrino
         options = {
           :rel => 'stylesheet',
           :type => 'text/css'
-        }.update(sources.extract_options!.symbolize_keys)
-        sources.flatten.inject(ActiveSupport::SafeBuffer.new) do |all,source|
+        }.update(sources.last.is_a?(Hash) ? Utils.symbolize_keys(sources.pop) : {})
+        sources.flatten.inject(SafeBuffer.new) do |all,source|
           all << tag(:link, { :href => asset_path(:css, source) }.update(options))
         end
       end
 
       ##
-      # Returns an html script tag for each of the sources provided.
+      # Returns a html script tag for each of the sources provided.
       # You can pass in the filename without extension or a symbol and we search it in your +appname.public_folder+
       # like app/public/javascript for inclusion. You can provide also a full path.
       #
@@ -261,8 +266,8 @@ module Padrino
       def javascript_include_tag(*sources)
         options = {
           :type => 'text/javascript'
-        }.update(sources.extract_options!.symbolize_keys)
-        sources.flatten.inject(ActiveSupport::SafeBuffer.new) do |all,source|
+        }.update(sources.last.is_a?(Hash) ? Utils.symbolize_keys(sources.pop) : {})
+        sources.flatten.inject(SafeBuffer.new) do |all,source|
           all << content_tag(:script, nil, { :src => asset_path(:js, source) }.update(options))
         end
       end

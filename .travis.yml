@@ -13,7 +13,8 @@ rvm:
   - 2.0.0
   - 2.1
   - 2.2.2
-  - 2.3.1
+  - 2.3.3
+  - 2.4.1
   - ruby-head
 notifications:
   irc: 'irc.freenode.org#padrino'
@@ -37,11 +38,23 @@ matrix:
     - rvm: 2.2.2
       env: SINATRA_EDGE=true
     - rvm: 2.1
+<<<<<<< HEAD
       env: STDLIB_ERB=true
     - rvm: 2.1
       env: AS_VERSION=3.2
   allow_failures:
     - rvm: jruby-9.1.4.0
+=======
+      env: ERB_ENGINE=stdlib
+    - rvm: 2.1
+      env: ERB_ENGINE=erubis
+    - rvm: 2.1
+      env: HAML_ENGINE=hamlit
+    - rvm: 2.1
+      env: AS_VERSION=3.2
+  allow_failures:
+    - rvm: jruby-9.0.5.0
+>>>>>>> official/0.14
     - rvm: rbx-2
     - env: SINATRA_EDGE=true
     - rvm: ruby-head

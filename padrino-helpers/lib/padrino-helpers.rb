@@ -1,11 +1,9 @@
 require 'padrino-support'
+require 'padrino-support/inflections'
 require 'i18n'
 require 'enumerator'
-require 'active_support/time_with_zone'               # next extension depends on this
-require 'active_support/core_ext/string/conversions'  # to_date
-require 'active_support/option_merger'                # with_options
-require 'active_support/core_ext/object/with_options' # with_options
-require 'active_support/inflector'                    # humanize
+
+# remove at 0.14
 require 'padrino/rendering'
 
 FileSet.glob_require('padrino-helpers/**/*.rb', __FILE__)

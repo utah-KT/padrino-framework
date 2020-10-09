@@ -16,7 +16,7 @@ module Padrino
       def set_eoutvar(compiler, eoutvar = '_erbout')
         compiler.put_cmd = "#{eoutvar}.safe_concat"
         compiler.insert_cmd = "#{eoutvar}.concat"
-        compiler.pre_cmd = ["#{eoutvar} = ActiveSupport::SafeBuffer.new"]
+        compiler.pre_cmd = ["#{eoutvar} = SafeBuffer.new"]
         compiler.post_cmd = ["#{eoutvar}.force_encoding(__ENCODING__)"]
       end
     end
@@ -48,5 +48,6 @@ end
 Tilt.prefer(Padrino::Rendering::ERBTemplate, :erb)
 
 Padrino::Rendering.engine_configurations[:erb] = {
-  :safe_buffer => true
+  :safe_buffer => true,
+  :outvar => '@_out_buf',
 }

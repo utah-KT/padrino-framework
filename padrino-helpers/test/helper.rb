@@ -29,7 +29,7 @@ class MiniTest::Spec
 
   # mock_model("Business", :new_record? => true) => <Business>
   def mock_model(klazz, options={})
-    options.reverse_merge!(:class => klazz, :new_record? => false, :id => 20, :errors => {})
+    options = { :class => klazz, :new_record? => false, :id => 20, :errors => {}}.update(options)
     record = stub(options)
     record.stubs(:to_ary => [record])
     record
@@ -39,8 +39,8 @@ class MiniTest::Spec
     FileUtils.mkdir_p(File.dirname(__FILE__) + "/views")
     FileUtils.mkdir_p(File.dirname(__FILE__) + "/views/layouts")
     path  = "/views/#{name}"
-    path += ".#{options.delete(:locale)}" if options[:locale].present?
-    path += ".#{options[:format]}" if options[:format].present?
+    path += ".#{options.delete(:locale)}" if options[:locale]
+    path += ".#{options[:format]}" if options[:format]
     path += ".erb" unless options[:format].to_s =~ /erb|slim|haml|rss|atom|builder|liquid/
     path += ".builder" if options[:format].to_s =~ /rss|atom/
     file  = File.dirname(__FILE__) + path

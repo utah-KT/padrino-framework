@@ -1,5 +1,4 @@
 require File.expand_path(File.dirname(__FILE__) + '/helper')
-require 'haml'
 
 class PadrinoPristine < Padrino::Application; end
 class PadrinoTestApp  < Padrino::Application; end
@@ -86,16 +85,16 @@ describe "Application" do
     end
 
     it 'should have different session values in different session management' do
-      class PadrinoTestApp3 < Padrino::Application
+      class PadrinoTestApp4 < Padrino::Application
         enable :sessions
       end
-      class PadrinoTestApp4 < Padrino::Application
+      class PadrinoTestApp5 < Padrino::Application
         set :sessions, :use => Rack::Session::Pool
       end
-      Padrino.mount("PadrinoTestApp3").to("/write")
-      Padrino.mount("PadrinoTestApp4").to("/read")
-      PadrinoTestApp3.get('/') { session[:foo] = "cookie" }
-      PadrinoTestApp4.get('/') { session[:foo] }
+      Padrino.mount("PadrinoTestApp4").to("/write")
+      Padrino.mount("PadrinoTestApp5").to("/read")
+      PadrinoTestApp4.get('/') { session[:foo] = "cookie" }
+      PadrinoTestApp5.get('/') { session[:foo] }
       @app = Padrino.application
       get '/write'
       get '/read'
@@ -149,12 +148,31 @@ describe "Application" do
         assert_equal 'custom error', body
       end
 
-      it 'should raise NameError even if Kernel.require is extended' do
-        assert_raises NameError do
+      it 'should pass Routing#parent to Module#parent' do
+        # see naming collision in issue #1814
+        begin
           ConstTest = Class.new(Padrino::Application)
-          require 'active_support/dependencies'
-          ConstTest::UninitializedConstant
+          class Module
+            def parent
+              :dirty
+            end
+          end
+          assert_equal :dirty, ConstTest.parent
+        ensure
+          Module.instance_eval{ undef :parent }
         end
+      end
+    end
+
+    describe "pre-compile routes" do
+      it "should compile routes before first request if enabled the :precompile_routes option" do
+        require File.expand_path(File.dirname(__FILE__) + '/fixtures/apps/precompiled_app')
+        assert_instance_of Padrino::PathRouter::Compiler, PrecompiledApp::App.compiled_router.engine
+        assert_instance_of Padrino::PathRouter::Compiler, PrecompiledApp::SubApp.compiled_router.engine
+        assert_equal true, PrecompiledApp::App.compiled_router.engine.compiled?
+        assert_equal true, PrecompiledApp::SubApp.compiled_router.engine.compiled?
+        assert_equal 20, PrecompiledApp::App.compiled_router.engine.routes.length
+        assert_equal 20, PrecompiledApp::SubApp.compiled_router.engine.routes.length
       end
     end
 

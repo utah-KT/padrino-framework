@@ -11,7 +11,7 @@ module MockBenchmark
 
   module Settings
     def bench_range
-      [20, 80, 320, 1280]
+      [20, 80, 320, 1280, 5120]
     end
 
     def run(*)
@@ -20,10 +20,6 @@ module MockBenchmark
       super
       puts `pmap -x #{$$} | tail -1`
     end
-  end
-
-  def self.paths
-    @paths ||= (1..100).map{ rand(36**8).to_s(36) }
   end
 
   def self.included(base)
@@ -37,53 +33,6 @@ module MockBenchmark
   def app
     @app
   end
-
-  module BenchmarkRouting
-    def bench_calling_404
-      assert_performance_linear 0.99 do |n|
-        n.times do
-          get "/#{@paths.sample}_not_found"
-        end
-      end
-      assert_equal 404, last_response.status
-    end
-
-    def bench_calling_one_path
-      assert_performance_linear 0.99 do |n|
-        n.times do
-          get '/foo'
-        end
-      end
-      assert_equal 200, last_response.status
-    end
-
-    def bench_calling_sample
-      assert_performance_linear 0.99 do |n|
-        n.times do
-          get "/#{@paths.sample}"
-        end
-      end
-      assert_equal 200, last_response.status
-    end
-
-    def bench_calling_params
-      assert_performance_linear 0.99 do |n|
-        n.times do
-          get "/foo?foo=bar&zoo=#{@paths.sample}"
-        end
-      end
-      assert_equal 200, last_response.status
-    end
-
-    def bench_sample_and_params
-      assert_performance_linear 0.99 do |n|
-        n.times do
-          get "/#{@paths.sample}?foo=bar&zoo=#{@paths.sample}"
-        end
-      end
-      assert_equal 200, last_response.status
-    end
-  end
 end
 
 class Padrino::HugeRouterBenchmark < Minitest::Benchmark
@@ -94,7 +43,7 @@ class Padrino::HugeRouterBenchmark < Minitest::Benchmark
     @pathss = {}
     @requests = {}
     self.class.bench_range.each do |n|
-      @pathss[n] = paths = (1..n/20).map{ rand(36**8).to_s(36) }
+      @pathss[n] = paths = (1..n/5).map{ rand(36**8).to_s(36) }
       @apps[n] = Sinatra.new Padrino::Application do
         paths.each do |p|
           get("/#{p}") { p.to_s }

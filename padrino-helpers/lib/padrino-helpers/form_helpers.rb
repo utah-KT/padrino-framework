@@ -45,9 +45,7 @@ module Padrino
         instance = builder_instance(object, options)
         # this can erect instance.multipart flag if the block calls instance.file_field
         html = capture_html(instance, &block)
-        options = { :multipart => instance.multipart }.update(options)
-        options.delete(:as)
-        options.delete(:namespace)
+        options = { :multipart => instance.multipart }.update(options.reject{ |key,_| [:namespace, :as].include?(key) })
         form_tag(url, options) { html }
       end
 
@@ -123,7 +121,7 @@ module Padrino
       #   hidden_form_method_field('delete')
       #
       def hidden_form_method_field(desired_method)
-        return ActiveSupport::SafeBuffer.new if desired_method.blank? || desired_method.to_s =~ /get|post/i
+        return SafeBuffer.new if desired_method.nil? || desired_method.to_s =~ /get|post/i
         hidden_field_tag(:_method, :value => desired_method)
       end
 
@@ -145,9 +143,8 @@ module Padrino
       #   field_set_tag("Office", :class => 'office-set') { }
       #
       def field_set_tag(*args, &block)
-        options = args.extract_options!
-        legend_text = args.first
-        legend_html = legend_text.blank? ? ActiveSupport::SafeBuffer.new : content_tag(:legend, legend_text)
+        options = args.last.is_a?(Hash) ? args.pop : {}
+        legend_html = args.empty? ? SafeBuffer.new : content_tag(:legend, args.first)
         concat_content content_tag(:fieldset, legend_html << capture_html(&block), options)
       end
 
@@ -170,8 +167,8 @@ module Padrino
       #   label_tag :username, :class => 'long-label' do ... end
       #
       def label_tag(name, options={}, &block)
-        options = { :caption => "#{name.to_s.humanize}: ", :for => name }.update(options)
-        caption_text = ActiveSupport::SafeBuffer.new << options.delete(:caption)
+        options = { :caption => "#{Inflections.humanize(name)}: ", :for => name }.update(options)
+        caption_text = SafeBuffer.new << options.delete(:caption)
         caption_text << "<span class='required'>*</span> ".html_safe if options.delete(:required)
 
         if block_given?
@@ -527,7 +524,7 @@ module Padrino
       #   submit_tag :class => 'btn'
       #
       def submit_tag(*args)
-        options = args.extract_options!
+        options = args.last.is_a?(Hash) ? args.pop : {}
         caption = args.length >= 1 ? args.first : "Submit"
         input_tag(:submit, { :value => caption }.merge(options))
       end
@@ -581,13 +578,17 @@ module Padrino
       #   # </form>
       #
       def button_to(*args, &block)
-        warn 'Warning: method button_to with block will change behavior on Padrino 0.13.0 release and will wrap the content of the block with <button></button> tag.' if block_given?
-        options   = args.extract_options!.dup
+        options = args.last.is_a?(Hash) ? args.pop : {}
         name, url = *args
         options['data-remote'] = 'true' if options.delete(:remote)
         submit_options = options.delete(:submit_options) || {}
-        block ||= proc { submit_tag(name, submit_options) }
-        form_tag(url || name, options, &block)
+        form_tag(url || name, options) do
+          if block_given?
+            content_tag(:button, capture_html(&block), submit_options)
+          else
+            submit_tag(name, submit_options)
+          end
+        end
       end
 
       ##
@@ -807,7 +808,7 @@ module Padrino
       def builder_instance(object, options={})
         default_builder = respond_to?(:settings) && settings.default_builder || 'StandardFormBuilder'
         builder_class = options.delete(:builder) || default_builder
-        builder_class = "Padrino::Helpers::FormBuilder::#{builder_class}".constantize if builder_class.is_a?(String)
+        builder_class = Padrino::Helpers::FormBuilder.const_get(builder_class) if builder_class.is_a?(String)
         builder_class.new(self, object, options)
       end
 

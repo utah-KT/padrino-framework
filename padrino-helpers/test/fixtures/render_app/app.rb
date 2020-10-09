@@ -94,7 +94,7 @@ class RenderDemo < Padrino::Application
 
   helpers do
     def dive_helper(ext)
-      # @current_engine, save = nil
+      # @current_engine, save = nil, @current_engine
       form_result = form_tag '/' do
         render "dive_inner_#{ext}"
       end
@@ -106,5 +106,9 @@ class RenderDemo < Padrino::Application
   get '/double_dive_:ext' do
     @ext = params[:ext]
     render "dive_outer_#{@ext}"
+  end
+
+  get '/' do
+    render 'index'
   end
 end

@@ -137,7 +137,7 @@ module Padrino
           message = _padrino_mailer::Message.new(self)
           message.delivery_method(*delivery_settings)
           message.instance_eval(&block) if block_given?
-          mail_attributes.reverse_merge(mailer_defaults) if respond_to?(:mailer_defaults)
+          mail_attributes = mailer_defaults.merge(mail_attributes) if respond_to?(:mailer_defaults)
           mail_attributes.each_pair { |k, v| message.method(k).call(v) }
           message.deliver
         end
@@ -148,7 +148,10 @@ module Padrino
         #
         def delivery_settings
           @_delivery_setting ||= begin
-            raise "You must setup :delivery_method, see api for more details" if RUBY_PLATFORM =~ /win32/ && !respond_to?(:delivery_method)
+            if Gem.win_platform? && !respond_to?(:delivery_method)
+              raise "To use mailers on Windows you must set a :delivery_method, see http://padrinorb.com/guides/features/padrino-mailer/#configuration"
+            end
+
             return [:sendmail, { :location => `which sendmail`.chomp }] unless respond_to?(:delivery_method)
             return [delivery_method.keys[0], delivery_method.values[0]] if delivery_method.is_a?(Hash)
             return [delivery_method, {}] if delivery_method.is_a?(Symbol)

@@ -1017,7 +1017,7 @@ describe "FormHelpers" do
     it 'should display correct button_to in erb' do
       get "/erb/button_to"
       assert_response_has_tag('form', :action => '/foo')
-      assert_response_has_tag('form label', :for => 'username', :content => 'Username: ')
+      assert_response_has_tag('form button label', :for => 'username', :content => 'Username: ')
       assert_response_has_tag('form', :action => '/bar')
       assert_response_has_tag('#test-point ~ form > input[type=submit]', :value => 'Bar button')
     end
@@ -1025,7 +1025,7 @@ describe "FormHelpers" do
     it 'should display correct button_to in haml' do
       get "/haml/button_to"
       assert_response_has_tag('form', :action => '/foo')
-      assert_response_has_tag('form label', :for => 'username', :content => 'Username: ')
+      assert_response_has_tag('form button label', :for => 'username', :content => 'Username: ')
       assert_response_has_tag('form', :action => '/bar')
       assert_response_has_tag('#test-point ~ form > input[type=submit]', :value => 'Bar button')
     end
@@ -1033,7 +1033,7 @@ describe "FormHelpers" do
     it 'should display correct button_to in slim' do
       get "/slim/button_to"
       assert_response_has_tag('form', :action => '/foo')
-      assert_response_has_tag('form label', :for => 'username', :content => 'Username: ')
+      assert_response_has_tag('form button label', :for => 'username', :content => 'Username: ')
       assert_response_has_tag('form', :action => '/bar')
       assert_response_has_tag('#test-point ~ form > input[type=submit]', :value => 'Bar button')
     end

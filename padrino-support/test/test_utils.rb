@@ -63,7 +63,7 @@ describe 'Padrino::Utils.deep_dup' do
     array = [1, [2, 3]]
     dup = Padrino::Utils.deep_dup(array)
     dup[1][2] = 4
-    assert_equal nil, array[1][2]
+    assert_equal 2, array[1].size
     assert_equal 4, dup[1][2]
   end
 
@@ -71,7 +71,7 @@ describe 'Padrino::Utils.deep_dup' do
     hash = { :a => { :b => 'b' } }
     dup = Padrino::Utils.deep_dup(hash)
     dup[:a][:c] = 'c'
-    assert_equal nil, hash[:a][:c]
+    refute_includes hash[:a], :c
     assert_equal 'c', dup[:a][:c]
   end
 
@@ -79,7 +79,7 @@ describe 'Padrino::Utils.deep_dup' do
     array = [1, { :a => 2, :b => 3 } ]
     dup = Padrino::Utils.deep_dup(array)
     dup[1][:c] = 4
-    assert_equal nil, array[1][:c]
+    refute_includes array[1], :c
     assert_equal 4, dup[1][:c]
   end
 
@@ -87,7 +87,7 @@ describe 'Padrino::Utils.deep_dup' do
     hash = { :a => [1, 2] }
     dup = Padrino::Utils.deep_dup(hash)
     dup[:a][2] = 'c'
-    assert_equal nil, hash[:a][2]
+    assert_equal 2, hash[:a].size
     assert_equal 'c', dup[:a][2]
   end
 
@@ -107,8 +107,18 @@ describe 'Padrino::Utils.deep_dup' do
   end
 
   it 'should not double the frozen keys' do
-    hash = { Fixnum => 1 }
+    hash = { 'a'.freeze => 1 }
     dup = Padrino::Utils.deep_dup(hash)
     assert_equal 1, dup.keys.length
+  end
+end
+
+describe 'Padrino::Utils.symbolize_keys' do
+  it 'should symbolize string keys' do
+    assert_equal({ :a  => 1, :b  => 2 }, Padrino::Utils.symbolize_keys('a' => 1, 'b' => 2))
+  end
+
+  it 'should not fail on non-symbolizable keys' do
+    assert_equal({ Object => 1, true => 2 }, Padrino::Utils.symbolize_keys(Object => 1, true => 2))
   end
 end
