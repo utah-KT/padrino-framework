@@ -1,6 +1,19 @@
 <ul class="nav nav-tabs">
   <li class=active> <%%= link_to tag_icon(:list, pat(:list)), url(:<%= @orm.name_plural %>, :index) %></li>
   <li> <%%= link_to tag_icon(:plus, pat(:new)), url(:<%= @orm.name_plural  %>, :new) %></li>
+  <%% if @page && @previous %>
+    <li> <%%= link_to tag_icon(:backward, pat(:previous_page)), url(:<%= @orm.name_plural %>, :index, page: @page - 1) %></li>
+  <%% end %>
+  <%% if @page %>
+    <li> <%%= link_to tag_icon(:forward, pat(:next_page)), url(:<%= @orm.name_plural %>, :index, page: @page + 1) %></li>
+  <%% end %>
+  <li>
+    <form action="<%= @orm.name_plural %>">
+      <label for="page">Page:</label>
+      <input type="text" name="page" value="<%%= @page %>">
+      <input clss="btn" type="submit" value="Go">
+    </form>
+  </li>
 </ul>
 <div class=tabs-content>
   <table id=list class="table table-striped table-hover table-condensed">

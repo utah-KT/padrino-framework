@@ -1,6 +1,10 @@
 %ul.nav.nav-tabs
   %li.active=link_to tag_icon(:list, pat(:list)), url(:<%= @orm.name_plural %>, :index)
   %li=link_to tag_icon(:plus, pat(:new)), url(:<%= @orm.name_plural %>, :new)
+  - if @page && @previous
+    %li=link_to tag_icon(:backward, pat(:previous_page)), url(:<%= @orm.name_plural %>, :index, page: @page - 1)
+  - if @page
+    %li=link_to tag_icon(:forward, pat(:next_page)), url(:<%= @orm.name_plural %>, :index, page: @page + 1)
 
 .tabs-content
   %table#list.table.table-striped.table-hover.table-condensed

@@ -1,7 +1,16 @@
 <%= @app_name %>::<%= @admin_name %>.controllers :<%= @orm.name_plural %> do
   get :index do
     @title = "<%= @orm.name_plural.capitalize %>"
-    @<%= @orm.name_plural %> = <%= @orm.all %>
+
+    @page = params[:page] ? params[:page].to_i : 1
+    @previous = true if @page > 1
+
+    end_id = @page * 100
+    start_id = end_id - 100
+    @<%= @orm.name_plural %> = <%= @orm.klass %>.where id: start_id..end_id
+    @<%= @orm.name_plural %>.pop if @<%= @orm.name_plural %>.count > 100
+
+
     render '<%= @orm.name_plural %>/index'
   end
 
@@ -40,6 +49,7 @@
     @<%= @orm.name_singular %> = <%= @orm.find("params[:id]") %>
     if @<%= @orm.name_singular %>
       if <%= @orm.update_attributes("params[:#{@orm.name_param}]") %>
+        @<%= @orm.name_singular %>.expire_cache if @<%= @orm.name_singular %>.respond_to? :expire_cache
         flash[:success] = pat(:update_success, :model => '<%= @orm.name_singular.capitalize %>', :id =>  "#{params[:id]}")
         params[:save_and_continue] ?
           redirect(url(:<%= @orm.name_plural %>, :index)) :
